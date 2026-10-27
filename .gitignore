@@ -9,3 +9,8 @@ desktop.ini
 
 # Logs / temporales
 *.log
+
+# Base de datos del laboratorio (regenerable con init_db.py)
+lab.db
+.venv/
+__pycache__/

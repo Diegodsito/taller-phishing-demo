@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel admin — COMPARAYA (lab)</title>
+<style>
+  :root{color-scheme:light dark}
+  body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:760px;margin:40px auto;
+    padding:0 16px;line-height:1.5;background:Canvas;color:CanvasText}
+  h1{font-size:1.5rem}
+  .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  a{color:#ee6a17}
+  table{width:100%;border-collapse:collapse;margin-top:18px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #8884}
+  th{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;opacity:.7}
+  .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;
+    background:#ee6a1722;color:#ee6a17}
+  .note{margin-top:22px;font-size:.85rem;opacity:.75}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <h1>Panel de administraci&oacute;n</h1>
+    <span>{{ usuario }} &middot; <a href="/logout">Cerrar sesi&oacute;n</a></span>
+  </div>
+  <p>&Aacute;rea restringida. Solo accesible con una sesi&oacute;n cuyo rol sea <b>admin</b>.</p>
+
+  <table>
+    <thead><tr><th>ID</th><th>Correo</th><th>Rol</th></tr></thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr>
+        <td>{{ u['id'] }}</td>
+        <td>{{ u['email'] }}</td>
+        <td><span class="pill">{{ u['rol'] }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">Nota del laboratorio: las contrase&ntilde;as no se muestran porque se
+  almacenan solo como hash (scrypt), nunca en texto plano.</p>
+  <p><a href="/">&larr; Volver al inicio</a></p>
+</body>
+</html>

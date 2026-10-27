@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>COMPARAYA — Laboratorio de seguridad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#eef0f3; --surface:#ffffff; --surface-2:#f6f7f9;
+    --fg:#19212e; --muted:#636e7e; --border:#e2e6eb;
+    --accent:#ee6a17; --accent-2:#ff8a3c; --on-accent:#ffffff;
+    --danger:#cf2a1e; --danger-bg:#fdecea;
+    --warn:#8a4b00; --warn-bg:#ffe9cc; --warn-line:#f0a33f;
+    --ok:#1b7a3d; --ok-bg:#e6f5ec;
+    --shadow:0 10px 30px rgba(20,28,45,.10);
+    --font-d:"Plus Jakarta Sans",system-ui,sans-serif;
+    --font-b:"Figtree",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0e1420; --surface:#161d2b; --surface-2:#1d2636;
+    --fg:#e8edf4; --muted:#94a1b6; --border:#2a3446;
+    --accent:#ff7d2e; --accent-2:#ff9a52; --on-accent:#1a1205;
+    --danger:#ff6a5c; --danger-bg:#2c1512;
+    --warn:#ffd49c; --warn-bg:#2d2110; --warn-line:#c7883a;
+    --ok:#7ad69a; --ok-bg:#122318;
+    --shadow:0 12px 32px rgba(0,0,0,.45); color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0e1420; --surface:#161d2b; --surface-2:#1d2636;
+    --fg:#e8edf4; --muted:#94a1b6; --border:#2a3446;
+    --accent:#ff7d2e; --accent-2:#ff9a52; --on-accent:#1a1205;
+    --danger:#ff6a5c; --danger-bg:#2c1512;
+    --ok:#7ad69a; --ok-bg:#122318;
+    --shadow:0 12px 32px rgba(0,0,0,.45); color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  img{max-width:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-b);line-height:1.5}
+  h1,h2,h3,.brand{font-family:var(--font-d)}
+  button{font:inherit;cursor:pointer}
+  a{color:var(--accent)}
+
+  .sim-ribbon{position:sticky;top:0;z-index:30;background:var(--danger);color:#fff;
+    padding:9px 16px;display:flex;gap:10px;align-items:center;justify-content:center;
+    flex-wrap:wrap;font-size:.82rem;font-weight:600;text-align:center}
+  .sim-ribbon b{font-weight:800}
+
+  .wrap{padding-inline:max(16px,env(safe-area-inset-left,0px))}
+  .site{max-width:1120px;margin:0 auto}
+  .topbar{display:flex;align-items:center;gap:18px;padding-block:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:1.5rem;
+    letter-spacing:-.02em;flex:0 0 auto}
+  .brand .bag{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:1.1rem}
+  .brand .n1{color:var(--fg)}.brand .n2{color:var(--accent)}
+  .brand small{display:block;font-family:var(--font-b);font-weight:600;font-size:.52rem;
+    letter-spacing:.22em;color:var(--muted);margin-top:-2px}
+
+  .lure{margin-top:18px;background:var(--warn-bg);border:1px solid var(--warn-line);
+    border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center;
+    color:var(--warn);font-weight:600;font-size:.95rem}
+  .lure .big{font-size:1.5rem;flex:0 0 auto}
+
+  .loginwrap{display:grid;place-items:center;padding-block:34px 10px}
+  .card{width:100%;max-width:430px;background:var(--surface);border:1px solid var(--border);
+    border-radius:18px;box-shadow:var(--shadow);padding:30px 28px}
+  .card h1{font-size:1.7rem;text-align:center;margin:.1em 0;line-height:1.15}
+  .card h1 .b2{color:var(--accent)}
+  .card .sub{text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 20px}
+  .field{display:flex;align-items:center;gap:10px;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-top:12px}
+  .field .ic{color:var(--accent);flex:0 0 auto}
+  .field input{border:0;background:transparent;color:var(--fg);font:inherit;flex:1;min-width:0;outline:none}
+  .field input::placeholder{color:var(--muted)}
+  .submit{width:100%;margin-top:18px;border:0;border-radius:11px;padding:13px;
+    font-weight:800;letter-spacing:.06em;font-size:.82rem;
+    background:var(--accent);color:var(--on-accent);box-shadow:0 8px 18px rgba(238,106,23,.35)}
+  .msg{margin-top:16px;border-radius:11px;padding:11px 14px;font-size:.9rem;font-weight:600}
+  .msg.err{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger)}
+  .msg.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+
+  .labbox{max-width:1120px;margin:24px auto 0;background:var(--surface);
+    border:1px dashed var(--accent);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+  .labbox h2{font-size:1.1rem;margin:0 0 10px}
+  .labbox code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:.86rem}
+  .labbox ul{margin:8px 0 0;padding-left:20px}
+  .labbox li{margin:8px 0;font-size:.92rem}
+  .labbox .tag{display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.04em;
+    border-radius:999px;padding:2px 9px;margin-right:6px;vertical-align:middle}
+  .tag.vuln{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger)}
+
+  footer{max-width:1120px;margin:0 auto;padding-block:22px 34px;color:var(--muted);
+    font-size:.8rem;text-align:center}
+  @media (max-width:560px){.card{padding:24px 18px}}
+</style>
+</head>
+<body>
+
+<div class="sim-ribbon">
+  &#9888;&#65039; <b>LABORATORIO DE SEGURIDAD</b> &mdash; Entorno acad&eacute;mico local (127.0.0.1). Marca ficticia. <b>No ingreses datos reales.</b>
+</div>
+
+<main class="site wrap">
+  <header class="topbar">
+    <div class="brand">
+      <span class="bag">&#128717;&#65039;</span>
+      <span>
+        <span><span class="n1">COMPARA</span><span class="n2">YA</span></span>
+        <small>COMPARA &middot; AHORRA &middot; DECIDE</small>
+      </span>
+    </div>
+  </header>
+
+  {% if usuario %}
+  <div class="lure" style="background:var(--ok-bg);border-color:var(--ok);color:var(--ok)">
+    <span class="big">&#9989;</span>
+    <span>Sesi&oacute;n iniciada como <b>{{ usuario }}</b> (rol: {{ rol }}).
+      {% if rol == 'admin' %}<a href="/panel">Ir al panel admin</a> &middot; {% endif %}
+      <a href="/logout">Cerrar sesi&oacute;n</a></span>
+  </div>
+  {% endif %}
+
+  <div class="loginwrap">
+    <form class="card" method="post" action="/login" autocomplete="off">
+      <h1>Bienvenid@ a<br><span class="b2">COMPARAYA</span></h1>
+      <p class="sub">Ingresa tus datos para continuar</p>
+
+      <div class="field">
+        <span class="ic">&#9993;&#65039;</span>
+        <input name="email" type="email" placeholder="correo@comparaya.cl" required>
+      </div>
+      <div class="field">
+        <span class="ic">&#128273;</span>
+        <input name="password" type="password" placeholder="Contrase&ntilde;a" required>
+      </div>
+
+      {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+
+      <button class="submit" type="submit">INICIAR SESI&Oacute;N</button>
+    </form>
+  </div>
+
+  <!-- Indice de endpoints del laboratorio (para los asistentes al taller) -->
+  <section class="labbox">
+    <h2>Endpoints del laboratorio</h2>
+    <ul>
+      <li><b>Login seguro:</b> este formulario &rarr; <code>POST /login</code> (SQL parametrizado + hash).</li>
+      <li><b>Panel admin:</b> <code>/panel</code> &rarr; devuelve <b>403</b> sin sesi&oacute;n de administrador.</li>
+      <li><span class="tag vuln">VULN 1</span><b>SSTI:</b> <code>/saludo?nombre=TuNombre</code> &middot; prueba <code>/saludo?nombre={{ '{{7*7}}' }}</code></li>
+      <li><span class="tag vuln">VULN 2</span><b>Open Redirect:</b> <code>/go?url=/</code> &middot; prueba <code>/go?url=http://127.0.0.1:9999/test</code></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  P&aacute;gina ficticia para un taller acad&eacute;mico de ciberseguridad. No afiliada a ning&uacute;n sitio real.
+  Dos vulnerabilidades intencionales; el resto endurecido seg&uacute;n OWASP. Ver <b>README.md</b>.
+</footer>
+
+</body>
+</html>
