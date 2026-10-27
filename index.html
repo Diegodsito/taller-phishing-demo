@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulación de Phishing — Taller de Ciberseguridad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+  /* Layout: franja de advertencia fija arriba -> barra de navegador falsa (recurso didactico) ->
+     sitio clonado con login -> panel de aprendizaje; overlay de "revelado" tras enviar. */
+  :root{
+    --bg:#eef0f3; --surface:#ffffff; --surface-2:#f6f7f9;
+    --fg:#19212e; --muted:#636e7e; --border:#e2e6eb;
+    --accent:#ee6a17; --accent-2:#ff8a3c; --on-accent:#ffffff;
+    --danger:#cf2a1e; --danger-bg:#fdecea;
+    --warn:#8a4b00; --warn-bg:#ffe9cc; --warn-line:#f0a33f;
+    --fb:#1877f2;
+    --shadow:0 10px 30px rgba(20,28,45,.10);
+    --font-d:"Plus Jakarta Sans",system-ui,sans-serif;
+    --font-b:"Figtree",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0e1420; --surface:#161d2b; --surface-2:#1d2636;
+    --fg:#e8edf4; --muted:#94a1b6; --border:#2a3446;
+    --accent:#ff7d2e; --accent-2:#ff9a52; --on-accent:#1a1205;
+    --danger:#ff6a5c; --danger-bg:#2c1512;
+    --warn:#ffd49c; --warn-bg:#2d2110; --warn-line:#c7883a;
+    --shadow:0 12px 32px rgba(0,0,0,.45); color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0e1420; --surface:#161d2b; --surface-2:#1d2636;
+    --fg:#e8edf4; --muted:#94a1b6; --border:#2a3446;
+    --accent:#ff7d2e; --accent-2:#ff9a52; --on-accent:#1a1205;
+    --danger:#ff6a5c; --danger-bg:#2c1512;
+    --warn:#ffd49c; --warn-bg:#2d2110; --warn-line:#c7883a;
+    --shadow:0 12px 32px rgba(0,0,0,.45); color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-b);line-height:1.5}
+  h1,h2,h3,.brand{font-family:var(--font-d)}
+  button{font:inherit;cursor:pointer}
+  a{color:var(--accent)}
+
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);
+    background:var(--danger);z-index:40}
+
+  /* Franja de simulacion (siempre visible) */
+  .sim-ribbon{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;
+    background:var(--danger);color:#fff;
+    padding:9px max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+    display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;
+    font-size:.82rem;font-weight:600;letter-spacing:.01em;text-align:center}
+  .sim-ribbon b{font-weight:800}
+
+  .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));
+        padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+  /* Barra de navegador falsa (didactica) */
+  .browser{background:var(--surface-2);border-bottom:1px solid var(--border)}
+  .browser-inner{max-width:1120px;margin:0 auto;padding-block:10px;
+    display:flex;gap:12px;align-items:center;min-width:0}
+  .dots{display:flex;gap:6px;flex:0 0 auto}
+  .dots i{width:11px;height:11px;border-radius:50%;background:#cdd3db;display:block}
+  .dots i:nth-child(1){background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+  .urlbar{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--border);border-radius:999px;
+    padding:7px 14px;font-family:var(--font-b);font-size:.86rem;color:var(--muted)}
+  .urlbar .lock{color:var(--danger);font-weight:700;flex:0 0 auto}
+  .urlbar .url{color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .urlbar .url .fake{color:var(--danger);font-weight:700}
+
+  /* Sitio "clonado" (marca ficticia) */
+  .site{max-width:1120px;margin:0 auto}
+  .topbar{display:flex;align-items:center;gap:18px;padding-block:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:1.5rem;
+    letter-spacing:-.02em;flex:0 0 auto}
+  .brand .bag{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:1.1rem}
+  .brand .n1{color:var(--fg)}.brand .n2{color:var(--accent)}
+  .brand small{display:block;font-family:var(--font-b);font-weight:600;font-size:.52rem;
+    letter-spacing:.22em;color:var(--muted);margin-top:-2px}
+  .search{flex:1 1 280px;min-width:0;display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:10px 16px}
+  .search input{border:0;background:transparent;color:var(--fg);font:inherit;flex:1;min-width:0;outline:none}
+  .search input::placeholder{color:var(--muted)}
+  .search button{border:0;border-radius:999px;background:var(--accent);color:var(--on-accent);
+    padding:7px 13px;font-weight:700}
+  .icons{display:flex;gap:14px;color:var(--muted);flex:0 0 auto}
+  .icons span{font-size:1.15rem;line-height:1}
+
+  .menu{display:flex;gap:26px;flex-wrap:wrap;border-top:1px solid var(--border);
+    border-bottom:2px solid var(--accent);padding-block:12px;margin-bottom:0;
+    font-weight:600;color:var(--fg);font-size:.95rem}
+  .menu span{white-space:nowrap}
+
+  /* banner de urgencia (senuelo clasico) */
+  .lure{margin-top:18px;background:var(--warn-bg);border:1px solid var(--warn-line);
+    border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center;
+    color:var(--warn);font-weight:600;font-size:.95rem}
+  .lure .big{font-size:1.5rem;flex:0 0 auto}
+
+  /* tarjeta de login */
+  .loginwrap{display:grid;place-items:center;padding-block:34px 10px}
+  .card{width:100%;max-width:430px;background:var(--surface);border:1px solid var(--border);
+    border-radius:18px;box-shadow:var(--shadow);padding:30px 28px}
+  .card h1{font-size:1.7rem;text-align:center;margin:.1em 0 .1em;line-height:1.15;text-wrap:balance}
+  .card h1 .b2{color:var(--accent)}
+  .card .sub{text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 20px}
+  .field{display:flex;align-items:center;gap:10px;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-top:12px}
+  .field .ic{color:var(--accent);flex:0 0 auto}
+  .field input{border:0;background:transparent;color:var(--fg);font:inherit;flex:1;min-width:0;outline:none}
+  .field input::placeholder{color:var(--muted)}
+  .eye{border:0;background:transparent;color:var(--accent);font-size:1.05rem;padding:0;line-height:1}
+  .forgot{display:block;color:var(--accent);font-weight:600;font-size:.86rem;margin:12px 2px 0}
+  .submit{width:100%;margin-top:18px;border:0;border-radius:11px;padding:13px;
+    font-weight:800;letter-spacing:.06em;font-size:.82rem;
+    background:var(--border);color:var(--muted);transition:.15s}
+  .submit.on{background:var(--accent);color:var(--on-accent);box-shadow:0 8px 18px rgba(238,106,23,.35)}
+  .or{display:flex;align-items:center;gap:12px;color:var(--muted);margin:18px 0;font-size:.85rem}
+  .or::before,.or::after{content:"";height:1px;background:var(--border);flex:1}
+  .soc{width:100%;border:1px solid var(--border);background:var(--surface);color:var(--fg);
+    border-radius:11px;padding:11px;font-weight:600;display:flex;align-items:center;
+    justify-content:center;gap:9px;margin-top:10px}
+  .soc.fb{background:var(--fb);color:#fff;border-color:var(--fb)}
+  .soc .g{font-weight:800;font-family:var(--font-d)}
+  .create{display:block;text-align:center;font-weight:700;color:var(--fg);
+    text-decoration:underline;margin-top:18px;font-size:.92rem}
+
+  /* marcadores de "senales" (toggle) */
+  .flagged{position:relative}
+  .marker{position:absolute;z-index:5;top:-10px;right:-10px;width:24px;height:24px;border-radius:50%;
+    background:var(--danger);color:#fff;font-weight:800;font-size:.8rem;display:none;
+    align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:var(--font-b)}
+  .urlbar .marker{top:50%;right:8px;transform:translateY(-50%)}
+  body.flags .marker{display:flex}
+  body.flags .flagged{outline:2px dashed var(--danger);outline-offset:3px;border-radius:12px}
+
+  /* Panel de aprendizaje */
+  .learn{max-width:1120px;margin:14px auto 0;padding-block:26px 40px}
+  .learn-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+    padding:24px 22px;box-shadow:var(--shadow)}
+  .learn h2{font-size:1.25rem;margin:0 0 4px}
+  .learn .lead{color:var(--muted);margin:0 0 18px;font-size:.95rem;max-width:62ch}
+  .toggle{border:1.5px solid var(--accent);background:transparent;color:var(--accent);
+    border-radius:11px;padding:11px 18px;font-weight:700;margin-bottom:20px}
+  .toggle.active{background:var(--accent);color:var(--on-accent)}
+  .flags-list{list-style:none;padding:0;margin:0;display:grid;gap:12px;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .flags-list li{display:flex;gap:12px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:12px;padding:14px;min-width:0}
+  .flags-list .num{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--danger);
+    color:#fff;font-weight:800;display:grid;place-items:center;font-size:.85rem;font-family:var(--font-d)}
+  .flags-list b{display:block;font-size:.95rem}
+  .flags-list p{margin:3px 0 0;color:var(--muted);font-size:.86rem}
+
+  /* Overlay de revelado */
+  .reveal{position:fixed;inset:0;z-index:60;background:rgba(10,14,22,.72);
+    display:none;align-items:flex-start;justify-content:center;overflow:auto;
+    padding:max(24px,env(safe-area-inset-top,0px)) 16px 40px;backdrop-filter:blur(3px)}
+  .reveal.show{display:flex}
+  .reveal-card{width:100%;max-width:560px;background:var(--surface);border-radius:20px;
+    box-shadow:var(--shadow);overflow:hidden;margin-top:24px}
+  .reveal-head{background:var(--danger);color:#fff;padding:24px 26px}
+  .reveal-head .emoji{font-size:2.4rem}
+  .reveal-head h2{margin:8px 0 4px;font-size:1.5rem;color:#fff;text-wrap:balance}
+  .reveal-head p{margin:0;opacity:.95;font-size:.95rem}
+  .reveal-body{padding:22px 26px}
+  .captured{background:var(--danger-bg);border:1px solid var(--danger);border-radius:12px;
+    padding:12px 14px;font-size:.9rem;word-break:break-word}
+  .captured code{font-family:var(--font-b);font-weight:700;color:var(--danger)}
+  .reveal-body h3{font-size:1.05rem;margin:20px 0 8px}
+  .reveal-body ul{margin:0;padding-left:20px;color:var(--fg)}
+  .reveal-body li{margin:6px 0;font-size:.92rem}
+  .reveal-body li span{color:var(--muted)}
+  .safe-note{margin-top:18px;font-size:.84rem;color:var(--muted);
+    border-top:1px solid var(--border);padding-top:14px}
+  .close{display:block;width:100%;margin-top:18px;border:0;border-radius:11px;padding:13px;
+    background:var(--accent);color:var(--on-accent);font-weight:800;letter-spacing:.04em}
+
+  footer{max-width:1120px;margin:0 auto;padding-block:18px 30px;color:var(--muted);font-size:.8rem;text-align:center}
+
+  @media (max-width:560px){
+    .card{padding:24px 18px}
+    .reveal-head{padding:20px}
+    .reveal-body{padding:18px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="sim-ribbon">
+  &#9888;&#65039; <b>SIMULACION DE PHISHING</b> &mdash; Taller de Ciberseguridad. Sitio ficticio con fines educativos. <b>No ingreses contrase&ntilde;as reales.</b>
+</div>
+
+<!-- Barra de navegador falsa: recurso didactico. La URL es enganosa a proposito. -->
+<div class="browser wrap">
+  <div class="browser-inner">
+    <div class="dots"><i></i><i></i><i></i></div>
+    <div class="urlbar flagged">
+      <span class="lock">&#10005; No seguro</span>
+      <span class="url">http://comparaya-<span class="fake">verificacion.cl-acceso-cuenta.net</span>/login</span>
+      <span class="marker">1</span>
+    </div>
+  </div>
+</div>
+
+<main class="site wrap">
+  <header class="topbar">
+    <div class="brand">
+      <span class="bag">&#128717;&#65039;</span>
+      <span>
+        <span><span class="n1">COMPARA</span><span class="n2">YA</span></span>
+        <small>COMPARA &middot; AHORRA &middot; DECIDE</small>
+      </span>
+    </div>
+    <div class="search">
+      <span>&#128269;</span>
+      <input placeholder="&iquest;Qu&eacute; est&aacute;s buscando?" aria-label="Buscar">
+      <button type="button">Buscar</button>
+    </div>
+    <div class="icons" aria-hidden="true"><span>&#129293;</span><span>&#127769;</span><span>&#128100;</span><span>&#9881;&#65039;</span></div>
+  </header>
+
+  <nav class="menu">
+    <span>Tecnolog&iacute;a</span><span>ElectroHogar</span><span>Computaci&oacute;n</span><span>Perfumer&iacute;a y Cuidado personal</span>
+  </nav>
+
+  <div class="lure flagged">
+    <span class="big">&#9200;</span>
+    <span>&iexcl;Tu cuenta ser&aacute; <u>suspendida en 24 horas</u>! Verifica tus datos ahora para no perder tus ofertas guardadas.</span>
+    <span class="marker">3</span>
+  </div>
+
+  <div class="loginwrap">
+    <form class="card" id="loginForm" novalidate>
+      <h1>Bienvenid@ a<br><span class="b2">COMPARAYA</span></h1>
+      <p class="sub">Por favor ingresa tus datos para continuar</p>
+
+      <div class="field flagged">
+        <span class="ic">&#9993;&#65039;</span>
+        <input id="email" type="email" placeholder="correo@electronico.cl" autocomplete="off" required>
+        <span class="marker">4</span>
+      </div>
+      <div class="field">
+        <span class="ic">&#128273;</span>
+        <input id="pass" type="password" placeholder="Contrase&ntilde;a" autocomplete="off" required>
+        <button class="eye" type="button" id="eye" aria-label="Mostrar contrase&ntilde;a">&#128065;&#65039;</button>
+      </div>
+
+      <a class="forgot" href="#" onclick="return false">&iquest;Olvidaste tu contrase&ntilde;a?</a>
+
+      <button class="submit" type="submit" id="submitBtn">INICIAR SESI&Oacute;N</button>
+
+      <div class="or">&oacute;</div>
+
+      <div class="flagged" style="border-radius:12px">
+        <button class="soc" type="button" data-sim><span class="g">G</span> Conectar con Google</button>
+        <button class="soc fb" type="button" data-sim style="margin-top:10px">f  Conectar con Facebook</button>
+        <span class="marker">5</span>
+      </div>
+
+      <a class="create" href="#" onclick="return false">&iquest;A&uacute;n no tienes cuenta? Crea una aqu&iacute;</a>
+    </form>
+  </div>
+</main>
+
+<!-- Panel de aprendizaje -->
+<section class="learn wrap">
+  <div class="learn-card">
+    <h2>&iquest;Por qu&eacute; esta p&aacute;gina es un intento de phishing?</h2>
+    <p class="lead">Se ve casi id&eacute;ntica a un sitio leg&iacute;timo, y ese es justamente el truco. Activa el resaltado para ver las 5 se&ntilde;ales de alerta marcadas sobre la p&aacute;gina de arriba.</p>
+    <button class="toggle" id="flagToggle" aria-pressed="false">&#128269; Revelar las se&ntilde;ales de phishing</button>
+    <ul class="flags-list">
+      <li><span class="num">1</span><div><b>URL enga&ntilde;osa</b><p>El dominio real ser&iacute;a <i>comparaya.cl</i>. Aqu&iacute; el verdadero dominio es <i>cl-acceso-cuenta.net</i>; lo dem&aacute;s es relleno para confundir.</p></div></li>
+      <li><span class="num">2</span><div><b>Sin HTTPS</b><p>Dice "No seguro" y usa <i>http://</i>. Un login leg&iacute;timo siempre va cifrado con el candado y <i>https://</i>.</p></div></li>
+      <li><span class="num">3</span><div><b>Urgencia y amenaza</b><p>"Tu cuenta ser&aacute; suspendida en 24 horas" busca que act&uacute;es sin pensar. T&aacute;ctica cl&aacute;sica de presi&oacute;n.</p></div></li>
+      <li><span class="num">4</span><div><b>Pide credenciales tras un enlace</b><p>Llegaste por un correo/mensaje y te piden usuario y clave. Entra siempre escribiendo t&uacute; la direcci&oacute;n oficial.</p></div></li>
+      <li><span class="num">5</span><div><b>Botones sociales falsos</b><p>Imitan "Conectar con Google/Facebook" para robar tambi&eacute;n esas credenciales o permisos.</p></div></li>
+    </ul>
+  </div>
+</section>
+
+<footer>P&aacute;gina ficticia creada para un taller de concientizaci&oacute;n. No afiliada a ning&uacute;n sitio real. No captura ni env&iacute;a datos.</footer>
+
+<!-- Overlay de revelado -->
+<div class="reveal" id="reveal" role="dialog" aria-modal="true" aria-labelledby="revealTitle">
+  <div class="reveal-card">
+    <div class="reveal-head">
+      <div class="emoji">&#127907;</div>
+      <h2 id="revealTitle">Acabas de caer en la simulaci&oacute;n</h2>
+      <p>En un ataque real, los datos que escribiste ya estar&iacute;an en manos del atacante.</p>
+    </div>
+    <div class="reveal-body">
+      <div class="captured" id="captured"></div>
+      <p style="color:var(--muted);font-size:.86rem;margin:12px 0 0">Tranquilo: esto es una demostraci&oacute;n. <b>Nada se guard&oacute; ni se envi&oacute; a ning&uacute;n servidor.</b></p>
+
+      <h3>Las pistas que lo delataban</h3>
+      <ul>
+        <li>La URL no era el dominio oficial. <span>El verdadero dominio estaba al final: <i>cl-acceso-cuenta.net</i>.</span></li>
+        <li>La conexi&oacute;n dec&iacute;a "No seguro" (sin HTTPS).</li>
+        <li>Un mensaje de urgencia te presionaba a actuar r&aacute;pido.</li>
+        <li>Ped&iacute;a tu clave despu&eacute;s de llegar por un enlace.</li>
+      </ul>
+
+      <h3>C&oacute;mo protegerte</h3>
+      <ul>
+        <li>Escribe t&uacute; mismo la direcci&oacute;n oficial en el navegador, no sigas enlaces de correos.</li>
+        <li>Revisa el dominio real: lee de derecha a izquierda antes de la primera barra.</li>
+        <li>Activa la verificaci&oacute;n en dos pasos (2FA) en tus cuentas.</li>
+        <li>Usa un gestor de contrase&ntilde;as: no autocompleta en dominios falsos.</li>
+        <li>Ante la duda, no ingreses datos y reporta el mensaje.</li>
+      </ul>
+
+      <p class="safe-note">Este ejercicio es solo para concientizaci&oacute;n. Nunca uses una p&aacute;gina as&iacute; para enga&ntilde;ar a personas reales ni para capturar credenciales ajenas.</p>
+      <button class="close" id="closeReveal">Volver a la demostraci&oacute;n</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mostrar / ocultar contrasena
+  var pass=document.getElementById('pass'),eye=document.getElementById('eye');
+  eye.addEventListener('click',function(){
+    var show=pass.type==='password';pass.type=show?'text':'password';
+    eye.textContent=show?'🙈':'👁️';
+    eye.setAttribute('aria-label',show?'Ocultar contrasena':'Mostrar contrasena');
+  });
+
+  // Activar el boton cuando hay datos (como el sitio real)
+  var email=document.getElementById('email'),btn=document.getElementById('submitBtn');
+  function refresh(){btn.classList.toggle('on',email.value.trim()!==''&&pass.value!=='');}
+  email.addEventListener('input',refresh);pass.addEventListener('input',refresh);
+
+  // Envio -> revelar la leccion. No se transmite ni almacena nada.
+  var reveal=document.getElementById('reveal'),captured=document.getElementById('captured');
+  function trigger(){
+    var e=email.value.trim()||'(sin correo)';
+    captured.innerHTML='Habrias entregado: <code>'+e.replace(/[<>&]/g,'')+'</code> + tu contrasena.';
+    reveal.classList.add('show');
+  }
+  document.getElementById('loginForm').addEventListener('submit',function(ev){ev.preventDefault();trigger();});
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sim]'),function(b){b.addEventListener('click',trigger);});
+  document.getElementById('closeReveal').addEventListener('click',function(){
+    reveal.classList.remove('show');email.value='';pass.value='';refresh();
+  });
+  reveal.addEventListener('click',function(ev){if(ev.target===reveal)reveal.classList.remove('show');});
+
+  // Resaltar senales
+  var t=document.getElementById('flagToggle');
+  t.addEventListener('click',function(){
+    var on=document.body.classList.toggle('flags');
+    t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');
+    t.textContent=on?'✓ Senales resaltadas (ocultar)':'🔍 Revelar las senales de phishing';
+  });
+</script>
+</body>
+</html>
